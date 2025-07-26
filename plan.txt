@@ -1,0 +1,536 @@
+# Project structure to create:
+# app/
+#   models/
+#   schemas/
+#   api/
+#   core/
+#   db/
+# migrations/
+Project Overview
+You are building an automated lead generation and business intelligence system specifically designed 
+for travel agencies to discover, qualify, and capture potential business partners and clients 
+from across the internet in real-time.
+
+Primary Objective
+Create an intelligent dynamic web scraping and analysis system that automatically discovers, evaluates, and 
+delivers qualified people, travellers, companies, tour operators, travel bloggers, event organizers, and travel 
+industry leads in real-time, similar to how ChatGPT or Claude can search and analyze web content, 
+but specifically optimized for travel business intelligence.
+
+
+# Complete Technical Implementation Plan for Dynamic Lead Generation System
+
+## Project Structure & Initial Setup
+
+### Step 1: Environment Setup & Project Structure
+**Create project directory structure:**
+
+### Step 2: Dependencies Installation & Configuration
+
+**Create requirements.txt with essential packages:**
+- fastapi[all] - Web framework
+- sqlalchemy - Database ORM
+- alembic - Database migrations
+- httpx - HTTP client for async requests
+- beautifulsoup4 - HTML parsing
+- lxml - XML/HTML parser
+- scrapy - Web crawling framework
+- playwright - Browser automation
+- newspaper3k - Article extraction
+- python-multipart - File upload support
+- python-dotenv - Environment variables
+- pydantic - Data validation
+- pandas - Data manipulation
+- nltk - Natural language processing
+- fuzzywuzzy - Fuzzy string matching
+- python-Levenshtein - String similarity
+- fake-useragent - User agent rotation
+- aiofiles - Async file operations
+
+**Environment variables setup (.env file):**
+- DATABASE_URL
+- GOOGLE_API_KEY
+- GEMINI_API_KEY
+- GOOGLE_SEARCH_ENGINE_ID
+- GEMINI_API_KEY
+- MAX_CONCURRENT_REQUESTS
+- CRAWL_DELAY_SECONDS
+- MAX_PAGES_PER_DOMAIN
+- LOG_LEVEL
+
+## Phase 1: Database & Core Models Setup
+
+### Step 3: Database Schema Design
+
+**Create SQLAlchemy models for:**
+
+**SearchQuery table:**
+- id (Primary Key)
+- query_text (Text)
+- search_engine (String - google search)
+- created_at (DateTime)
+- status (String - pending/completed/failed)
+- total_results_found (Integer)
+
+**URL table:**
+- id (Primary Key)
+- url (String, Unique)
+- domain (String, Indexed)
+- discovered_from (String - search/crawl)
+- search_query_id (Foreign Key)
+- first_seen (DateTime)
+- last_crawled (DateTime)
+- crawl_status (String - pending/success/failed/skipped)
+- http_status_code (Integer)
+- content_type (String)
+- content_length (Integer)
+- robots_allowed (Boolean)
+
+**CrawledContent table:**
+- id (Primary Key)
+- url_id (Foreign Key)
+- raw_html_path (String - file path)
+- title (Text)
+- meta_description (Text)
+- extracted_text (Text)
+- language (String)
+- crawl_timestamp (DateTime)
+- processing_status (String)
+
+**ExtractedLead table:**
+- id (Primary Key)
+- content_id (Foreign Key)
+- business_name (String)
+- contact_person (String)
+- email (String)
+- phone (String)
+- address (Text)
+- website (String)
+- lead_type (String - hotel/restaurant/tour_operator)
+- confidence_score (Float)
+- extraction_method (String - ai/regex/structured)
+- created_at (DateTime)
+
+**LeadScore table:**
+- id (Primary Key)
+- lead_id (Foreign Key)
+- completeness_score (Float)
+- relevance_score (Float)
+- freshness_score (Float)
+- final_score (Float)
+- scoring_factors (JSON)
+- scored_at (DateTime)
+
+### Step 4: Database Connection & Migration Setup
+
+**Configure SQLAlchemy engine:**
+- Setup connection pooling
+- Configure SQLite for local development
+- Create base model class with common fields (id, created_at, updated_at)
+- Setup Alembic for database migrations
+
+**Create migration files:**
+- Initial schema creation
+- Add indexes for performance (url.domain, url.crawl_status, lead.email)
+- Setup foreign key constraints
+
+## Phase 2: Search Engine Integration
+
+### Step 5: Search API Clients Implementation
+
+**Google Web Search API client:**
+- Handle API authentication if any
+- Implement request formatting for travel-related queries
+- Add response parsing and pagination handling
+- Include error handling and retry logic
+- Add rate limiting to respect API quotas
+- Store raw API responses for debugging
+
+**Query Builder Implementation:**
+- Create travel-specific query templates
+- Implement query expansion using synonyms
+- Add location-based query modifiers
+- Include negative keywords to filter irrelevant results
+- Support for different search intents (informational, commercial)
+
+**Search result processing:**
+- Extract URLs, titles, descriptions from API responses
+- Filter results based on domain quality
+- Remove duplicate URLs across different searches
+- Categorize results by content type (blog, business, social media)
+- Store metadata for each discovered URL
+
+### Step 6: Search Orchestration Logic
+
+**Search strategy implementation:**
+- Create search job queue with priority levels
+- Implement search result aggregation from multiple APIs
+- Add search result deduplication logic
+- Include domain-based filtering (avoid spam domains)
+- Create search performance metrics tracking
+
+**Travel-specific search optimization:**
+- Build keyword lists for different travel verticals
+- Implement geo-targeted search queries
+- Add seasonal relevance factors
+- Include competitor analysis searches
+- Create trending topic integration
+
+## Phase 3: Web Crawling Engine
+
+### Step 7: Multi-tier Crawler Architecture
+
+**Simple HTTP Crawler (Tier 1):**
+- Use httpx for async HTTP requests
+- Implement User-Agent rotation
+- Add request timeout handling
+- Include HTTP status code processing
+- Handle redirects and canonical URLs
+- Implement basic content-type filtering
+
+**Scrapy Integration (Tier 2):**
+- Create custom Scrapy spider for travel sites
+- Implement middleware for request/response processing
+- Add automatic form detection and submission
+- Include pagination handling
+- Setup download delays and concurrent request limits
+- Add custom header injection
+
+**Playwright Browser Automation (as a fallback low priority) (Tier 3):**
+- Setup headless browser instances
+- Implement JavaScript execution waiting
+- Add dynamic content loading detection
+- Include screenshot capture for debugging
+- Handle cookie acceptance dialogs
+- Implement infinite scroll handling
+
+### Step 8: Content Extraction Pipeline
+
+**HTML Content Processing:**
+- Use BeautifulSoup for HTML parsing
+- Implement content area detection (remove navigation, ads)
+- Extract structured data (JSON-LD, microdata)
+- Process meta tags for SEO information
+- Handle different character encodings
+- Clean up malformed HTML
+
+**Text Extraction Strategies:**
+- newspaper3k for article content
+- Custom extractors for contact information
+- Business information extraction from structured data
+- Social media link extraction
+
+**Link Discovery & Following:**
+- Extract all outbound links from pages
+- Filter links based on travel-related keywords
+- Implement depth-limited crawling
+- Add domain-specific crawling rules
+- Include sitemap.xml parsing
+- Handle relative vs absolute URLs
+
+### Step 9: Crawling Management System
+
+**Queue Management:**
+- Implement in-memory priority queue for URLs
+- Add URL deduplication using hash sets
+- Include crawl scheduling based on domain politeness
+- Implement failed URL retry mechanism
+- Create crawl job status tracking
+
+**Robots.txt Compliance:**
+- Fetch and parse robots.txt for each domain
+- Implement crawl-delay respect
+- Add disallow rule checking
+- Include sitemap discovery from robots.txt
+- Handle robots.txt caching and updates
+- Add override capabilities for allowed domains
+
+**Rate Limiting & Politeness:**
+- Implement per-domain crawl delays
+- Add concurrent request limiting per domain
+- Include backoff strategies for server errors
+- Implement time-based crawling windows
+- Add bandwidth usage monitoring
+- Create respectful crawling patterns
+
+## Phase 4: Content Processing & Lead Extraction
+
+### Step 10: Content Cleaning & Normalization
+
+**Text Processing Pipeline:**
+- Remove HTML tags and JavaScript
+- Clean up excessive whitespace and special characters
+- Implement language detection using nltk
+- Add text encoding normalization
+- Remove boilerplate content (headers, footers)
+- Extract and clean main content areas
+
+**Data Normalization:**
+- Standardize phone number formats
+- Normalize email address formats
+- Clean and validate postal addresses
+- Standardize business name formats
+- Normalize date and time formats
+
+**Content Classification:**
+- Categorize content by type (business listing, blog post, review, social media post)
+- Identify commercial vs informational content
+- Classify by travel vertical (hotels, restaurants, tours)
+- Add content quality scoring
+- Implement spam content detection
+- Tag content with relevant keywords
+
+### Step 11: Lead Extraction Implementation
+
+**Pattern-Based Extraction:**
+- Create regex patterns for email extraction
+- Implement phone number pattern matching
+- Add business name extraction patterns
+- Include address pattern recognition
+- Create contact form detection logic
+- Implement social media profile extraction
+
+**Structured Data Processing:**
+- Parse Schema.org markup for business information
+- Extract data from JSON-LD scripts
+- Process microdata annotations
+- Handle business directory structured data
+- Extract review platform data
+- Parse event and service information
+
+**AI-Powered Content Analysis:**
+- Implement GEMINI API integration for lead extraction
+- Create specialized prompts for travel business identification
+- Add confidence scoring for AI extractions
+- Implement batch processing for cost optimization
+- Include fallback to local models if available
+- Add human-readable explanation generation
+
+### Step 12: Lead Scoring & Qualification
+
+**Completeness Scoring:**
+- Score based on available contact information
+- Weight business name, email, phone availability
+- Include website and social media presence
+- Add address and location information scoring
+- Consider business description completeness
+
+**Relevance Scoring:**
+- Match against travel industry keywords
+- Include geographic relevance factors
+- Add business size indicators
+
+**Freshness & Activity Scoring:**
+- Score based on content publication date
+- Include website last updated information
+
+## Phase 5: API Layer & User Interface
+
+### Step 13: FastAPI Application Structure
+
+**API Route Implementation:**
+- Create search job submission endpoints
+- Implement crawl job management endpoints
+- Add lead retrieval and filtering endpoints
+- Include system status and monitoring endpoints
+- Create data export functionality
+- Add search history and analytics endpoints
+
+**Request/Response Models:**
+- Define Pydantic models for all API inputs/outputs
+- Include comprehensive validation rules
+- Add proper error response structures
+- Implement pagination models
+- Create filter and search parameter models
+- Define export format specifications
+
+**Authentication & Security:**
+- Implement API key authentication
+- Add rate limiting for API endpoints
+- Include CORS configuration
+- Add request logging and monitoring
+- Implement input sanitization
+- Create audit trail functionality
+
+### Step 14: Background Task Processing
+
+**Job Queue System:**
+- Implement in-memory job queue with priorities
+- Create job status tracking and updates
+- Add job cancellation capabilities
+- Include job retry mechanisms
+- Implement job scheduling functionality
+- Create job result notification system
+
+**Task Workers:**
+- Create search job worker processes
+- Implement crawl job worker processes
+- Add lead processing worker processes
+- Include cleanup and maintenance workers
+- Create monitoring and health check workers
+- Add data export worker processes
+
+**Progress Tracking:**
+- Implement job progress reporting
+- Add real-time status updates
+- Create completion percentage calculations
+- Include error and warning reporting
+- Add performance metrics collection
+- Create job execution time tracking
+
+## Phase 6: Data Management & Export
+
+### Step 15: Local File Storage System
+
+**File Organization:**
+- Create directory structure for different data types
+- Implement file naming conventions with timestamps
+- Add file compression for large HTML files
+- Include file integrity checking
+- Create automated cleanup procedures
+- Add file backup and archiving
+
+**Data Export Functionality:**
+- Implement CSV export for leads
+- Add Excel export with multiple sheets
+- Create JSON export for API integration
+- Include PDF report generation
+- Add email export functionality
+- Create custom format support
+
+**Data Backup & Recovery:**
+- Implement database backup procedures
+- Add file storage backup routines
+- Create data recovery procedures
+- Include data integrity validation
+- Add incremental backup functionality
+- Create backup scheduling system
+
+### Step 16: Monitoring & Logging
+
+**Application Logging:**
+- Configure structured logging with JSON format
+- Implement log levels (DEBUG, INFO, WARNING, ERROR)
+- Add request/response logging
+- Include performance metric logging
+- Create error tracking and alerting
+- Add business metric logging
+
+**System Monitoring:**
+- Track crawl success rates
+- Monitor API usage and quotas
+- Measure lead extraction accuracy
+- Track system resource usage
+- Monitor database performance
+- Create health check endpoints
+
+**Performance Analytics:**
+- Calculate pages crawled per hour
+- Measure lead extraction rates
+- Track API cost per qualified lead
+- Monitor system uptime metrics
+- Analyze crawl efficiency by domain
+- Create performance trend analysis
+
+## Phase 7: Testing & Quality Assurance
+
+### Step 17: Test Suite Implementation
+
+**Unit Testing:**
+- Test all core utility functions
+- Validate data models and schemas
+- Test API endpoint functionality
+- Include crawler component testing
+- Test lead extraction accuracy
+- Validate data processing pipelines
+
+**Integration Testing:**
+- Test end-to-end crawling workflows
+- Validate search API integrations
+- Test database operations
+- Include file storage operations
+- Test AI API integrations
+- Validate export functionality
+
+**Data Quality Testing:**
+- Implement lead data validation
+- Test duplicate detection accuracy
+- Validate content extraction quality
+- Test data normalization procedures
+- Include data consistency checks
+- Create data integrity validation
+
+### Step 18: Performance Optimization
+
+**Database Optimization:**
+- Add proper indexing strategies
+- Optimize query performance
+- Implement connection pooling
+- Add query result caching
+- Optimize table structure
+- Create database maintenance procedures
+
+**Crawling Performance:**
+- Optimize concurrent request handling
+- Implement intelligent crawl scheduling
+- Add content-based early termination
+- Optimize memory usage for large crawls
+- Implement smart retry strategies
+- Add crawl result caching
+
+**System Resource Management:**
+- Monitor and optimize memory usage
+- Implement CPU usage optimization
+- Add disk space management
+- Optimize network usage
+- Implement resource-based throttling
+- Create system load balancing
+
+## Phase 8: Deployment & Production Readiness
+
+### Step 19: Configuration Management
+
+**Environment Configuration:**
+- Create development, staging, production configs
+- Implement environment-specific settings
+- Add configuration validation
+- Include secret management
+- Create configuration documentation
+- Add configuration change tracking
+
+**Error Handling & Recovery:**
+- Implement comprehensive error handling
+- Add automatic recovery mechanisms
+- Create error notification systems
+- Include graceful degradation strategies
+- Add circuit breaker patterns
+- Create manual recovery procedures
+
+### Step 20: Documentation & Maintenance
+
+**API Documentation:**
+- Generate OpenAPI/Swagger documentation
+- Create endpoint usage examples
+- Add authentication documentation
+- Include rate limiting information
+- Create troubleshooting guides
+- Add integration examples
+
+**System Documentation:**
+- Document system architecture
+- Create deployment procedures
+- Add troubleshooting guides
+- Include performance tuning tips
+- Create backup and recovery procedures
+- Add monitoring and alerting setup
+
+**Maintenance Procedures:**
+- Create database maintenance schedules
+- Implement log rotation procedures
+- Add system health check routines
+- Create performance monitoring procedures
+- Include security update procedures
+- Add capacity planning guidelines
+
+This comprehensive plan provides a complete roadmap for building your lead generation system with all technical details and implementation steps clearly defined. 
+Each phase builds upon the previous one, ensuring a systematic approach to development.

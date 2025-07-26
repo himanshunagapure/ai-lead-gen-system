@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .base import Base
 
@@ -14,4 +15,7 @@ class ExtractedLead(Base):
     lead_type = Column(String(64))
     confidence_score = Column(Float)
     extraction_method = Column(String(64))
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False) 
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    
+    # Relationships
+    crawled_content = relationship("CrawledContent", back_populates="leads") 

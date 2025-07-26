@@ -61,7 +61,7 @@ class SearchOrchestrator:
             if not job:
                 break
             # Build advanced query
-            search_query = build_query(job.query, intent=job.intent, location=job.location)
+            search_query = build_query(base=job.query, location=job.location)
             raw_results = await self.client.paginated_search(search_query, max_results=job.max_results)
             self.metrics["total_results"] += len(raw_results)
             processed = process_search_results(raw_results)
@@ -69,6 +69,23 @@ class SearchOrchestrator:
             # Here you could store results to DB or return them
             print(f"Job: {job.query} | Results: {len(processed)}")
         self.metrics["end_time"] = time.time()
+
+    async def run_and_return_results(self):
+        all_results = []
+        self.metrics["start_time"] = time.time()
+        while len(self.job_queue) > 0:
+            job = await self.job_queue.get_next_job()
+            if not job:
+                break
+            search_query = build_query(base=job.query, location=job.location)
+            raw_results = await self.client.paginated_search(search_query, max_results=job.max_results)
+            self.metrics["total_results"] += len(raw_results)
+            processed = process_search_results(raw_results)
+            self.metrics["deduped_results"] += len(processed)
+            all_results.extend(processed)
+            print(f"Job: {job.query} | Results: {len(processed)}")
+        self.metrics["end_time"] = time.time()
+        return all_results
 
     def get_metrics(self) -> Dict[str, Any]:
         elapsed = None

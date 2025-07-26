@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Update the default to MySQL; set DATABASE_URL in your .env for production
-DATABASE_URL = os.getenv('DATABASE_URL')
+DATABASE_URL = os.getenv('DATABASE_URL') or 'mysql+mysqlconnector://leadgen_user:leadgen_pass@localhost:3306/leadgen_db'
 
 engine = create_engine(
     DATABASE_URL,

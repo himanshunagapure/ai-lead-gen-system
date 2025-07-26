@@ -30,12 +30,21 @@ def parse_html_content(html: str) -> Dict[str, Any]:
     microdata = []
     for tag in soup.find_all(attrs={"itemtype": True}):
         microdata.append({"itemtype": tag["itemtype"], "properties": tag.attrs})
-    # Clean up malformed HTML (BeautifulSoup does this by default)
+    # Robust title extraction
+    title = ""
+    if soup.title and soup.title.string and soup.title.string.strip():
+        title = soup.title.string.strip()
+    elif soup.find("meta", property="og:title") and soup.find("meta", property="og:title").get("content"):
+        title = soup.find("meta", property="og:title")["content"].strip()
+    elif soup.find("meta", attrs={"name": "title"}) and soup.find("meta", attrs={"name": "title"}).get("content"):
+        title = soup.find("meta", attrs={"name": "title"})["content"].strip()
+    elif soup.find("h1") and soup.find("h1").get_text(strip=True):
+        title = soup.find("h1").get_text(strip=True)
     return {
         "text": text,
         "meta": meta,
         "jsonld": jsonld,
         "microdata": microdata,
-        "title": soup.title.string if soup.title else "",
+        "title": title,
         "language": soup.html.get("lang") if soup.html else None,
     } 
